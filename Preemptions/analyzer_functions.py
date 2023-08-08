@@ -45,7 +45,7 @@ def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: in
 
   # Add title based on interval type
   if preemptIvls:
-    plt.title('Preemption Intervals')
+    plt.title('Preemption and Kernel Execution')
   else:
     plt.title('Logger Execution Intervals')
 
@@ -75,8 +75,8 @@ def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: i
   ax1.set_xlabel('Preemption #')
   ax1.set_ylabel('Interval (ns)')
   if preemptIvls:
-    ax1.set_title('Preemption and Shared Program Execution')
-    ax2.set_title('Preemption and Shared Program Execution')
+    ax1.set_title('Preemption and Kernel Execution')
+    ax2.set_title('Preemption and Kernel Execution')
   else:
     ax1.set_title('Logger Execution Intervals')
     ax2.set_title('Logger Execution Intervals')
