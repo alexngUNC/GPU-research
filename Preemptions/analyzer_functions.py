@@ -60,7 +60,7 @@ def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: in
   plt.show()
 
 
-def plot_separately(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, preemptIvls: bool=True, lowerBound=None, upperBound=None):
+def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, preemptIvls: bool=True, lowerBound=None, upperBound=None):
   """Plots the data side-by-side"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -88,7 +88,7 @@ def plot_separately(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES:
     ax2.set_ylim(lowerBound, upperBound)
 
   # Scatterplot of with shared memory
-  ax2.scatter(range(1, NUM_SAMPLES), sharedData, label='With Shared')
+  ax2.scatter(range(1, NUM_SAMPLES), sharedData, label='With Shared', color='orange')
   ax2.set_xlabel('Preemption #')
   ax2.set_ylabel('Interval (ns)')
   ax2.legend(loc='upper right')
