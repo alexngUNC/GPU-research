@@ -1,6 +1,24 @@
-def data_loader(noSharedPath: str, sharedPath: str, preemptIvls: bool=True):
+def data_loader(noSharedPath=None, sharedPath=None, singlePath=None, preemptIvls: bool=True, single: bool=False):
   """Reads the CSV files into Pandas dataframes"""
   import pandas as pd
+
+  # if only one data path is being passed in:
+  if single:
+    assert singlePath is not None, "Single data path must be passed in"
+    single = pd.read_csv(singlePath, header=None)
+    NUM_SAMPLES = len(single)
+    single.columns = ['start', 'end']
+
+    # calculate logger execution interval
+    single['interval'] = single['end'] - single['start']
+
+    # calculate preemption intervals if desired
+    if preemptIvls:
+      single_ivls = []
+      for i in range(0, NUM_SAMPLES-1):
+        single_ivls.append(single['start'][i+1] - single['end'][i])
+      return single, single_ivls
+    return single
 
   # read in the data
   noShared = pd.read_csv(noSharedPath, header=None)
@@ -30,14 +48,19 @@ def data_loader(noSharedPath: str, sharedPath: str, preemptIvls: bool=True):
   return noShared, shared
 
 
-def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, preemptIvls: bool=True, lowerBound=None, upperBound=None):
+def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
+                 preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None):
   """Plots the no shared and shared data on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
 
   # Make a scatterplot of both on the same plot
-  plt.scatter(range(1, NUM_SAMPLES), noSharedData, label='Without shared')
-  plt.scatter(range(1, NUM_SAMPLES), sharedData, label='With shared')
+  if firstLabel is not None and secondLabel is not None:
+    plt.scatter(range(1, NUM_SAMPLES), noSharedData, label=firstLabel)
+    plt.scatter(range(1, NUM_SAMPLES), sharedData, label=secondLabel)
+  else:
+    plt.scatter(range(1, NUM_SAMPLES), noSharedData, label='Without shared')
+    plt.scatter(range(1, NUM_SAMPLES), sharedData, label='With shared')
 
   # Add axis labels
   plt.xlabel('Preemption #')
@@ -60,7 +83,8 @@ def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: in
   plt.show()
 
 
-def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, preemptIvls: bool=True, lowerBound=None, upperBound=None):
+def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
+                  preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None):
   """Plots the data side-by-side"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -69,7 +93,10 @@ def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: i
   fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(15, 7))
 
   # Scatterplot of without shared memory
-  ax1.scatter(range(1, NUM_SAMPLES), noSharedData, label='Without Shared')
+  if firstLabel is not None:
+    ax1.scatter(range(1, NUM_SAMPLES), noSharedData, label=firstLabel)
+  else:
+    ax1.scatter(range(1, NUM_SAMPLES), noSharedData, label='Without Shared')
 
   # Add labels and titles
   ax1.set_xlabel('Preemption #')
@@ -88,7 +115,10 @@ def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: i
     ax2.set_ylim(lowerBound, upperBound)
 
   # Scatterplot of with shared memory
-  ax2.scatter(range(1, NUM_SAMPLES), sharedData, label='With Shared', color='orange')
+  if secondLabel is not None:
+    ax2.scatter(range(1, NUM_SAMPLES), sharedData, label=secondLabel, color='orange')
+  else:
+    ax2.scatter(range(1, NUM_SAMPLES), sharedData, label='With Shared', color='orange')
   ax2.set_xlabel('Preemption #')
   ax2.set_ylabel('Interval (ns)')
   ax2.legend(loc='upper right')
