@@ -125,3 +125,69 @@ def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: i
 
   # Show the plot
   plt.show()
+
+
+def five_number_summary(noSharedIvls, sharedIvls, singleIvls=None, single=False):
+  import numpy as np
+
+  # If only printing the 5-number summary of one set of intervals
+  if single:
+
+    # Get the 5-number summary
+    single_sum = np.percentile(singleIvls, [0, 25, 50, 75, 100])
+
+    # Print the 5-number summary
+    print('No Shared Memory:\n-----------------')
+    print("Minimum:", single_sum[0])
+    print("Q1:", single_sum[1])
+    print("Median:", single_sum[2])
+    print("Q3:", single_sum[3])
+    print("Maximum:", single_sum[4])
+    print('-----------------\n')
+
+    return single_sum
+    
+  no_shared_sum = np.percentile(noSharedIvls, [0, 25, 50, 75, 100], method='midpoint')
+
+  # Print the 5-number summaries
+  print('No Shared Memory:\n-----------------')
+  print("Minimum:", no_shared_sum[0])
+  print("Q1:", no_shared_sum[1])
+  print("Median:", no_shared_sum[2])
+  print("Q3:", no_shared_sum[3])
+  print("Maximum:", no_shared_sum[4])
+  print('-----------------\n')
+
+  print('Shared Memory:\n-----------------')
+  shared_sum = np.percentile(sharedIvls, [0, 25, 50, 75, 100], method='midpoint')
+  print("Minimum:", shared_sum[0])
+  print("Q1:", shared_sum[1])
+  print("Median:", shared_sum[2])
+  print("Q3:", shared_sum[3])
+  print("Maximum:", shared_sum[4])
+  print('-----------------')
+  return no_shared_sum, shared_sum
+
+
+def mean_difference(noSharedIvls, sharedIvls, show=True):
+  import numpy as np
+
+  # Get means
+  no_shared_mean = np.mean(noSharedIvls)
+  shared_mean = np.mean(sharedIvls)
+
+  # Calculate the difference in means
+  mean_diff = shared_mean - no_shared_mean
+
+  # Calculate the percent difference
+  percent_diff = (mean_diff/no_shared_mean) * 100
+
+  # Print the difference
+  if show:
+    print(f"No Shared Memory Mean: {no_shared_mean}")
+    print(f"Shared Memory Mean: {shared_mean}")
+    print("-----------------")
+    print(f"Difference in Means: {mean_diff}")
+    print(f"Percent Difference: {percent_diff}")
+
+  return mean_diff, percent_diff
