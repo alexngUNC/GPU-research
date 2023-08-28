@@ -207,3 +207,27 @@ def mean_difference(noSharedIvls, sharedIvls, show=True):
     print(f"Percent Difference: {percent_diff}")
 
   return mean_diff, percent_diff
+
+
+def median_difference(noSharedIvls, sharedIvls, show=True):
+  import numpy as np
+
+  # Get means
+  no_shared_median = np.median(noSharedIvls)
+  shared_median = np.median(sharedIvls)
+
+  # Calculate the difference in medians
+  median_diff = shared_median - no_shared_median
+
+  # Calculate the percent difference
+  percent_diff = (median_diff/no_shared_median) * 100
+
+  # Print the difference
+  if show:
+    print(f"No Shared Memory Median: {no_shared_median}")
+    print(f"Shared Memory Median: {shared_median}")
+    print("-----------------")
+    print(f"Difference in Medians: {median_diff}")
+    print(f"Percent Difference: {percent_diff}")
+
+  return median_diff, percent_diff
