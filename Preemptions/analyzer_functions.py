@@ -48,6 +48,22 @@ def data_loader(noSharedPath=None, sharedPath=None, singlePath=None, preemptIvls
   return noShared, shared
 
 
+def single_plot(data: list[int], NUM_SAMPLES: int, lowerBound=None, upperBound=None, title=None):
+  import matplotlib.pyplot as plt
+  plt.scatter(range(1, NUM_SAMPLES), data)
+  plt.xlabel('Preemption #')
+  plt.ylabel('Interval (ns)')
+  if title is not None:
+    plt.title(title)
+  else:
+    plt.title('Preemption and Kernel Execution Intervals')
+
+  # Adjust the y-axis limits if desired
+  if lowerBound is not None and upperBound is not None:
+    plt.ylim(lowerBound, upperBound)
+  plt.show()
+
+
 def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
                  preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None):
   """Plots the no shared and shared data on the same plot"""
