@@ -69,6 +69,7 @@ def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: in
   """Plots the no shared and shared data on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
+  import numpy as np
 
   # Make a scatterplot of both on the same plot
   if firstLabel is not None and secondLabel is not None:
@@ -81,6 +82,9 @@ def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: in
   # Add axis labels
   plt.xlabel('Preemption #')
   plt.ylabel('Interval (ns)')
+
+  # Add x-axis ticks
+  plt.xticks(np.linspace(0, 1000000, 11))
 
   # Add title based on interval type
   if preemptIvls:
@@ -104,6 +108,7 @@ def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: i
   """Plots the data side-by-side"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
+  import numpy as np
 
   # Create the subplots
   fig, (ax1, ax2) = plt.subplots(nrows=1, ncols=2, figsize=(15, 7))
@@ -117,6 +122,11 @@ def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: i
   # Add labels and titles
   ax1.set_xlabel('Preemption #')
   ax1.set_ylabel('Interval (ns)')
+
+  # Add x-axis ticks
+  ax1.set_xticks(np.linspace(0, 1000000, 11))
+  ax2.set_xticks(np.linspace(0, 1000000, 11))
+
   if preemptIvls:
     ax1.set_title('Preemption and Kernel Execution')
     ax2.set_title('Preemption and Kernel Execution')
