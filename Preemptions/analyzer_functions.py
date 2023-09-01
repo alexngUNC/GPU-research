@@ -249,3 +249,74 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
     print(f"Percent Difference: {percent_diff}")
 
   return median_diff, percent_diff
+
+
+def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
+                  preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
+                  medianLines=False, offset=10000):
+  """Plots the data side-by-side on the same plot"""
+  assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
+  import matplotlib.pyplot as plt
+  import numpy as np
+
+  # Create one big plot
+  plt.figure(figsize=(15, 7))
+
+  # x-values for no shared data
+  noSharedX = np.arange(1, NUM_SAMPLES)
+
+  # Move the shared data to the right
+  sharedX = noSharedX + NUM_SAMPLES + offset
+
+  # Scatterplot of without shared memory
+  if firstLabel is not None:
+    plt.scatter(noSharedX, noSharedData, label=firstLabel)
+  else:
+    plt.scatter(noSharedX, noSharedData, label='Without Shared')
+
+  # Add labels and titles
+  plt.xlabel('Preemption #')
+  plt.ylabel('Interval (ns)')
+
+  # Add x-axis ticks
+  # INCORRECT
+  # plt.set_xticks(np.linspace(0, 2000000, 20))
+  # plt.set_xticks(np.linspace(0, 2000000, 20))
+
+  if preemptIvls:
+    plt.title('Preemption and Kernel Execution')
+  else:
+    plt.title('Logger Execution Intervals')
+
+  # Set y-axis limits if desired
+  if lowerBound is not None and upperBound is not None:
+    plt.ylim(lowerBound, upperBound)
+
+  # Scatterplot of with shared memory
+  if secondLabel is not None:
+    plt.scatter(sharedX, sharedData, label=secondLabel, color='orange')
+  else:
+    plt.scatter(sharedX, sharedData, label='With Shared', color='orange')
+
+  # Plot the interval lines if desired
+  if medianLines:
+    noSharedMedian = np.median(noSharedData)
+    sharedMedian = np.median(sharedData)
+    lowerMedian, upperMedian = 0, 0
+    if sharedMedian > noSharedMedian:
+      lowerMedian = noSharedMedian
+      upperMedian = sharedMedian
+    else:
+      lowerMedian = sharedMedian
+      upperMedian = noSharedMedian
+
+    intervalLineX = NUM_SAMPLES+offset//2
+
+    plt.plot([1, intervalLineX], [noSharedMedian, noSharedMedian], color='limegreen', linestyle='--', label='Median')
+    plt.plot([intervalLineX, 2*NUM_SAMPLES+offset], [sharedMedian, sharedMedian], color='red', linestyle='--', label='Median')
+    medianDifference, percDiff = mean_difference(noSharedData, sharedData, show=False)
+    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='cyan', linestyle='--', label=f'{abs(medianDifference):.2f}')
+
+  # Show the plot
+  plt.legend(loc='upper right')
+  plt.show()
