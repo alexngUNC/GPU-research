@@ -104,7 +104,8 @@ def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: in
 
 
 def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
-                  preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None):
+                  preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
+                  medianLine=False):
   """Plots the data side-by-side"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -148,6 +149,13 @@ def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: i
   ax2.set_xlabel('Preemption #')
   ax2.set_ylabel('Interval (ns)')
   ax2.legend(loc='upper right')
+
+  # Plot the interval lines if desired
+  if medianLine:
+    noSharedMedian = np.median(noSharedData)
+    sharedMedian = np.median(sharedData)
+    ax1.axhline(noSharedMedian, color='red', linestyle='--', label='Median')
+    ax2.axhline(sharedMedian, color='red', linestyle='--', label='Median')
 
   # Show the plot
   plt.show()
