@@ -270,9 +270,9 @@ def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLE
 
   # Scatterplot of without shared memory
   if firstLabel is not None:
-    plt.scatter(noSharedX, noSharedData, label=firstLabel)
+    plt.scatter(noSharedX, noSharedData, label=firstLabel, color='dodgerblue')
   else:
-    plt.scatter(noSharedX, noSharedData, label='Without Shared')
+    plt.scatter(noSharedX, noSharedData, label='Without Shared', color='dodgerblue')
 
   # Add labels and titles
   plt.xlabel('Preemption #')
@@ -294,28 +294,45 @@ def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLE
 
   # Scatterplot of with shared memory
   if secondLabel is not None:
-    plt.scatter(sharedX, sharedData, label=secondLabel, color='orange')
+    plt.scatter(sharedX, sharedData, label=secondLabel, color='mediumspringgreen')
   else:
-    plt.scatter(sharedX, sharedData, label='With Shared', color='orange')
+    plt.scatter(sharedX, sharedData, label='With Shared', color='mediumspringgreen')
 
   # Plot the interval lines if desired
   if medianLines:
     noSharedMedian = np.median(noSharedData)
     sharedMedian = np.median(sharedData)
     lowerMedian, upperMedian = 0, 0
+    lowerStd, upperStd = 0, 0
     if sharedMedian > noSharedMedian:
       lowerMedian = noSharedMedian
+      lowerStd = np.std(noSharedData)
       upperMedian = sharedMedian
+      upperStdDev = np.std(sharedData)
     else:
       lowerMedian = sharedMedian
+      lowerStd = np.std(sharedData)
       upperMedian = noSharedMedian
+      upperStd = np.std(noSharedData)
 
     intervalLineX = NUM_SAMPLES+offset//2
 
-    plt.plot([1, intervalLineX], [noSharedMedian, noSharedMedian], color='limegreen', linestyle='--', label='Median')
-    plt.plot([intervalLineX, 2*NUM_SAMPLES+offset], [sharedMedian, sharedMedian], color='red', linestyle='--', label='Median')
+    # Median lines
+    plt.plot([0, intervalLineX+offset//5], [noSharedMedian, noSharedMedian], color='black', linestyle='--', label='Median')
+    plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [sharedMedian, sharedMedian], color='black', linestyle='--', label='Median')
     medianDifference, percDiff = mean_difference(noSharedData, sharedData, show=False)
-    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='cyan', linestyle='--', label=f'{abs(medianDifference):.2f}')
+
+    # Median difference line
+    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='black', linestyle='--', label=f'{abs(medianDifference):.4f}')
+
+    # Draw the arrows
+    plt.annotate('', xy=(intervalLineX, upperMedian), xytext=(intervalLineX-0.001, upperMedian), 
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='black'))
+    plt.annotate('', xy=(intervalLineX, lowerMedian), xytext=(intervalLineX+0.001, lowerMedian),
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='black'))
+    
+    # Put the median difference text
+    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.4f}', fontsize=12, color='black')
 
   # Show the plot
   plt.legend(loc='upper right')
