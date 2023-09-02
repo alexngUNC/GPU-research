@@ -323,16 +323,16 @@ def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLE
     medianDifference, percDiff = mean_difference(noSharedData, sharedData, show=False)
 
     # Median difference line
-    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='black', linestyle='--', label=f'{abs(medianDifference):.4f}')
+    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='firebrick', linestyle='--', label=f'{abs(medianDifference):.4f}')
 
     # Draw the arrows
     plt.annotate('', xy=(intervalLineX, upperMedian), xytext=(intervalLineX-0.001, upperMedian), 
-                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='black'))
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='firebrick'))
     plt.annotate('', xy=(intervalLineX, lowerMedian), xytext=(intervalLineX+0.001, lowerMedian),
-                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='black'))
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
     
     # Put the median difference text
-    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.4f}', fontsize=12, color='black')
+    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.4f}', fontsize=12, color='firebrick')
 
   # Show the plot
   plt.legend(loc='upper right')
