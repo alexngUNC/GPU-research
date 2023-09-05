@@ -1,5 +1,7 @@
 Preemptions/GTX1080/Data
 Preemptions/Xavier/Data
+Preemptions/Xavier/NoSharedData
+Preemptions/Xavier/MaxCarveout
 Preemptions/Xavier/SetCapacityData
 Preemptions/Xavier/SetCapacityDataOld
 Preemptions/GTX2080Ti/Data

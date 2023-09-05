@@ -1,4 +1,4 @@
-def data_loader(noSharedPath=None, sharedPath=None, singlePath=None, preemptIvls: bool=True, single: bool=False):
+def data_loader(noSharedPath=None, sharedPath=None, singlePath=None, preemptIvls: bool=True, single: bool=False, onlyPreemptIvls=False):
   """Reads the CSV files into Pandas dataframes"""
   import pandas as pd
 
@@ -43,12 +43,14 @@ def data_loader(noSharedPath=None, sharedPath=None, singlePath=None, preemptIvls
     for i in range(0, NUM_SAMPLES-1):
       no_shared_ivls.append(noShared['start'][i+1] - noShared['end'][i])
       shared_ivls.append(shared['start'][i+1] - shared['end'][i])
+    if onlyPreemptIvls:
+      return no_shared_ivls, shared_ivls
     return noShared, shared, no_shared_ivls, shared_ivls
 
   return noShared, shared
 
 
-def single_plot(data: list[int], NUM_SAMPLES: int, lowerBound=None, upperBound=None, title=None):
+def single_plot(data, NUM_SAMPLES: int, lowerBound=None, upperBound=None, title=None):
   import matplotlib.pyplot as plt
   plt.scatter(range(1, NUM_SAMPLES), data)
   plt.xlabel('Preemption #')
@@ -64,7 +66,7 @@ def single_plot(data: list[int], NUM_SAMPLES: int, lowerBound=None, upperBound=N
   plt.show()
 
 
-def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
+def same_plotter(noSharedData, sharedData, NUM_SAMPLES: int, 
                  preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None):
   """Plots the no shared and shared data on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
@@ -103,7 +105,7 @@ def same_plotter(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: in
   plt.show()
 
 
-def plot_separate(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
+def plot_separate(noSharedData, sharedData, NUM_SAMPLES: int, 
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
                   medianLine=False):
   """Plots the data side-by-side"""
@@ -251,9 +253,9 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
   return median_diff, percent_diff
 
 
-def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLES: int, 
+def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, 
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
-                  medianLines=False, offset=10000):
+                  medianLines=False, offset=100000, y_axis="Interval (ms)"):
   """Plots the data side-by-side on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -276,12 +278,17 @@ def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLE
 
   # Add labels and titles
   plt.xlabel('Preemption #')
-  plt.ylabel('Interval (ns)')
+  plt.ylabel(y_axis)
 
   # Add x-axis ticks
-  # INCORRECT
-  # plt.set_xticks(np.linspace(0, 2000000, 20))
-  # plt.set_xticks(np.linspace(0, 2000000, 20))
+  xTickLabels = ['']
+  xTickNums = np.arange(100, 1000, 100)
+  xTickLabels += [f'{n}k' for n in xTickNums]
+  xTickLabels.append('1 M')
+  xTickLabels += ["" for i in range(int(offset / 100000))]
+  xTickLabels += [f'{n}k' for n in xTickNums]
+  xTickLabels.append('1 M')
+  plt.xticks(np.arange(1, 2*NUM_SAMPLES+offset+100000, 100000), xTickLabels)
 
   if preemptIvls:
     plt.title('Preemption and Kernel Execution')
@@ -319,11 +326,11 @@ def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLE
 
     # Median lines
     plt.plot([0, intervalLineX+offset//5], [noSharedMedian, noSharedMedian], color='black', linestyle='--', label='Median')
-    plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [sharedMedian, sharedMedian], color='black', linestyle='--', label='Median')
+    plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [sharedMedian, sharedMedian], color='black', linestyle='--')
     medianDifference, percDiff = mean_difference(noSharedData, sharedData, show=False)
 
     # Median difference line
-    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='firebrick', linestyle='--', label=f'{abs(medianDifference):.4f}')
+    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='firebrick', linestyle='--', label=f'{abs(medianDifference):.4f} ms')
 
     # Draw the arrows
     plt.annotate('', xy=(intervalLineX, upperMedian), xytext=(intervalLineX-0.001, upperMedian), 
@@ -332,7 +339,7 @@ def plot_side_by_side(noSharedData: list[int], sharedData: list[int], NUM_SAMPLE
                  arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
     
     # Put the median difference text
-    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.4f}', fontsize=12, color='firebrick')
+    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.4f} ms', fontsize=12, color='firebrick')
 
   # Show the plot
   plt.legend(loc='upper right')
