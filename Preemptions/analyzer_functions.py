@@ -255,7 +255,7 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
 
 def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, 
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
-                  medianLines=False, offset=100000, y_axis="Interval (ms)"):
+                  medianLines=False, worstCaseLines=False, blockLines=False, offset=100000, y_axis="Interval (ms)", perCap=None):
   """Plots the data side-by-side on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -280,6 +280,9 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
   plt.xlabel('Preemption #')
   plt.ylabel(y_axis)
 
+  # Add y-axis ticks
+  plt.locator_params(axis='y', nbins=10)
+
   # Add x-axis ticks
   xTickLabels = ['']
   xTickNums = np.arange(100, 1000, 100)
@@ -291,7 +294,10 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
   plt.xticks(np.arange(1, 2*NUM_SAMPLES+offset+100000, 100000), xTickLabels)
 
   if preemptIvls:
-    plt.title('Preemption and Kernel Execution')
+    if perCap:
+      plt.title(f'Preemption and Execution - {perCap}% Capacity')
+    else:  
+      plt.title('Preemption and Execution')
   else:
     plt.title('Logger Execution Intervals')
 
@@ -305,41 +311,150 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
   else:
     plt.scatter(sharedX, sharedData, label='With Shared', color='mediumspringgreen')
 
+  # Calculate the median and std devs for the lines
+  noSharedMedian = np.median(noSharedData)
+  sharedMedian = np.median(sharedData)
+  noSharedStd = np.std(noSharedData)
+  sharedStd = np.std(sharedData)
+  if sharedMedian > noSharedMedian:
+    lowerMedian = noSharedMedian
+    lowerStd = noSharedStd
+    upperMedian = sharedMedian
+    upperStdDev = sharedStd
+  else:
+    lowerMedian = sharedMedian
+    lowerStd = sharedStd
+    upperMedian = noSharedMedian
+    upperStd = noSharedStd
+
+  # Set the x coordinate for the interval lines to be in the center of the offset
+  intervalLineX = NUM_SAMPLES+offset//2
+
+  # Decide whether the no shared data or shared data is higher for plotting
+  if sharedMedian > noSharedMedian:
+    sharedHigher=True
+  else:
+    sharedHigher=False
+
   # Plot the interval lines if desired
   if medianLines:
-    noSharedMedian = np.median(noSharedData)
-    sharedMedian = np.median(sharedData)
-    lowerMedian, upperMedian = 0, 0
-    lowerStd, upperStd = 0, 0
-    if sharedMedian > noSharedMedian:
-      lowerMedian = noSharedMedian
-      lowerStd = np.std(noSharedData)
-      upperMedian = sharedMedian
-      upperStdDev = np.std(sharedData)
-    else:
-      lowerMedian = sharedMedian
-      lowerStd = np.std(sharedData)
-      upperMedian = noSharedMedian
-      upperStd = np.std(noSharedData)
-
-    intervalLineX = NUM_SAMPLES+offset//2
-
     # Median lines
     plt.plot([0, intervalLineX+offset//5], [noSharedMedian, noSharedMedian], color='black', linestyle='--', label='Median')
     plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [sharedMedian, sharedMedian], color='black', linestyle='--')
-    medianDifference, percDiff = mean_difference(noSharedData, sharedData, show=False)
+
+    # Calculate the median difference
+    medianDifference = upperMedian - lowerMedian
 
     # Median difference line
-    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='firebrick', linestyle='--', label=f'{abs(medianDifference):.4f} ms')
+    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='firebrick', linestyle='--', label=f'{medianDifference:.3f} ms')
 
     # Draw the arrows
     plt.annotate('', xy=(intervalLineX, upperMedian), xytext=(intervalLineX-0.001, upperMedian), 
                  arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='firebrick'))
     plt.annotate('', xy=(intervalLineX, lowerMedian), xytext=(intervalLineX+0.001, lowerMedian),
                  arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
-    
+                 
     # Put the median difference text
-    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.4f} ms', fontsize=12, color='firebrick')
+    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.3f} ms', fontsize=12, color='firebrick')
+
+  elif worstCaseLines:
+    # Plot the lines for the top and bottom of one of the upper and lower blocks, respectively
+    # Find the bounds based on the 1st and 99th percentiles
+    if sharedHigher:
+      upperBlock = np.percentile(sharedData, 99)
+      lowerBlock = np.percentile(noSharedData, 1)
+      # Plot the lower bound line
+      plt.plot([0, intervalLineX+offset//5], [lowerBlock, lowerBlock], color='black', linestyle='--', label='1st Percentile')
+
+      # Plot the upper bound line
+      plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [upperBlock, upperBlock], color='dimgrey', linestyle='--', label='99th perentile')
+    else:
+      upperBlock = np.percentile(noSharedData, 99)
+      lowerBlock = np.percentile(sharedData, 1)
+      # Plot the lower bound line
+      plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [lowerBlock, lowerBlock], color='dimgrey', linestyle='--', label='1st Percentile')
+
+      # Plot the upper bound line
+      plt.plot([0, intervalLineX+offset//5], [upperBlock, upperBlock], color='black', linestyle='--', label='99th perentile')
+      
+    # Calculate the difference between the upper and lower blocks in the typical worst case
+    worstCaseDiff = upperBlock - lowerBlock
+
+    # Line for interval between lower and upper blocks bounds (worst case)
+    plt.plot([intervalLineX, intervalLineX], [lowerBlock, upperBlock], color='firebrick', linestyle='--', label=f'{worstCaseDiff:.3f} ms')
+
+    # Arrow for upper block
+    plt.annotate('', xy=(intervalLineX, upperBlock), xytext=(intervalLineX-0.001, upperBlock), 
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='firebrick'))
+    
+    # Arrow for lower block
+    plt.annotate('', xy=(intervalLineX, lowerBlock), xytext=(intervalLineX+0.001, lowerBlock),
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
+    
+    # Put the worst case difference text
+    plt.text(intervalLineX+offset//4, lowerBlock-lowerStd/2, f'{worstCaseDiff:.3f} ms', fontsize=12, color='firebrick')
+
+  elif blockLines:
+    # Plot the lines for the top and bottom of each data block
+    # Calculate the lower and upper bounds as the 1st and 99th percentiles
+    sharedLower= np.percentile(sharedData, 1)
+    noSharedLower = np.percentile(noSharedData, 1)
+    sharedUpper = np.percentile(sharedData, 99)
+    noSharedUpper = np.percentile(noSharedData, 99)
+
+    # Calculate the differences for each shared block
+    sharedDiff = sharedUpper - sharedLower
+    noSharedDiff = noSharedUpper - noSharedLower
+    
+    # Plot the shared lower bound line
+    plt.plot([intervalLineX+10000, NUM_SAMPLES+offset], [sharedLower, sharedLower], color='dimgrey', linestyle='--')
+
+    # Plot the shared upper bound line
+    plt.plot([intervalLineX+10000, NUM_SAMPLES+offset], [sharedUpper, sharedUpper], color='dimgrey', linestyle='--')
+
+    # Plot the difference line for shared memory
+    plt.plot([intervalLineX+20000, intervalLineX+20000], [sharedLower, sharedUpper], color='firebrick', linestyle='--')
+
+    # Plot the no shared lower bound line
+    plt.plot([1000000, intervalLineX-10000], [noSharedLower, noSharedLower], color='black', linestyle='--')
+
+    # Plot the no shared upper bound line
+    plt.plot([1000000, intervalLineX-10000], [noSharedUpper, noSharedUpper], color='black', linestyle='--')
+
+    # Plot the difference line for no shared memory
+    plt.plot([intervalLineX-20000, intervalLineX-20000], [noSharedLower, noSharedUpper], color='firebrick', linestyle='--')
+
+    # Arrow for shared upper bound
+    plt.annotate('', xy=(intervalLineX+20000, sharedUpper), xytext=(intervalLineX+20000-0.001, sharedUpper), 
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='firebrick'))
+    
+    # Arrow for shared lower bound
+    plt.annotate('', xy=(intervalLineX+20000, sharedLower), xytext=(intervalLineX+20000+0.001, sharedLower),
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
+    
+    # Arrow for no shared upper bound
+    plt.annotate('', xy=(intervalLineX-20000, noSharedUpper), xytext=(intervalLineX-20000-0.001, noSharedUpper), 
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='firebrick'))
+    
+    # Arrow for no shared lower bound
+    plt.annotate('', xy=(intervalLineX-20000, noSharedLower), xytext=(intervalLineX-20000+0.001, noSharedLower),
+                 arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
+    
+    if sharedHigher:
+      # Put the shared difference text above the shared data and the no shared below
+      plt.text(intervalLineX, sharedUpper+sharedStd//4, f'{sharedDiff:.3f} ms', fontsize=12, color='firebrick')
+      plt.text(intervalLineX, noSharedLower-noSharedStd//4, f'{noSharedDiff:.3f} ms', fontsize=12, color='firebrick')
+    else:
+      # Put the shared difference text below the shared data
+      # Put the text for the shared difference and no shared above
+      plt.text(intervalLineX, sharedLower-sharedStd//4, f'{sharedDiff:.3f} ms', fontsize=12, color='firebrick')
+      plt.text(intervalLineX, noSharedUpper+noSharedStd//4, f'{noSharedDiff:.3f} ms', fontsize=12, color='firebrick')
+    
+
+     
+
+    
+
 
   # Show the plot
   plt.legend(loc='upper right')
