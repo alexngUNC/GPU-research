@@ -255,7 +255,7 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
 
 def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, 
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
-                  medianLines=False, worstCaseLines=False, blockLines=False, offset=100000, y_axis="Interval (ms)", perCap=None):
+                  medianLines=False, worstCaseLines=False, blockLines=False, medianImpute=False, percent=99, offset=100000, y_axis="Interval (us)", perCap=None):
   """Plots the data side-by-side on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -336,6 +336,9 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
   else:
     sharedHigher=False
 
+  # Label the percentile lines for the worst-case and block lines
+  lowerLabel, upperLabel = percentile_labels(percent)
+
   # Plot the interval lines if desired
   if medianLines:
     # Median lines
@@ -346,7 +349,7 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
     medianDifference = upperMedian - lowerMedian
 
     # Median difference line
-    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='firebrick', linestyle='--', label=f'{medianDifference:.3f} ms')
+    plt.plot([intervalLineX, intervalLineX], [lowerMedian, upperMedian], color='firebrick', linestyle='--', label=f'{medianDifference:.3f} us')
 
     # Draw the arrows
     plt.annotate('', xy=(intervalLineX, upperMedian), xytext=(intervalLineX-0.001, upperMedian), 
@@ -355,33 +358,38 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
                  arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
                  
     # Put the median difference text
-    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.3f} ms', fontsize=12, color='firebrick')
+    plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.3f} us', fontsize=12, color='firebrick')
 
   elif worstCaseLines:
     # Plot the lines for the top and bottom of one of the upper and lower blocks, respectively
-    # Find the bounds based on the 1st and 99th percentiles
+    # Find the bounds based on the provided percentile
+    if medianImpute:
+      sharedData[sharedData > upperBound] = sharedMedian
+      sharedData[sharedData < lowerBound] = sharedMedian
+      noSharedData[noSharedData > upperBound] = noSharedMedian
+      noSharedData[noSharedData < lowerBound] = noSharedMedian
     if sharedHigher:
-      upperBlock = np.percentile(sharedData, 99)
-      lowerBlock = np.percentile(noSharedData, 1)
+      upperBlock = np.percentile(sharedData, percent)
+      lowerBlock = np.percentile(noSharedData, 100-percent)
       # Plot the lower bound line
-      plt.plot([0, intervalLineX+offset//5], [lowerBlock, lowerBlock], color='black', linestyle='--', label='1st Percentile')
+      plt.plot([0, intervalLineX+offset//5], [lowerBlock, lowerBlock], color='black', linestyle='--', label=lowerLabel)
 
       # Plot the upper bound line
-      plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [upperBlock, upperBlock], color='dimgrey', linestyle='--', label='99th perentile')
+      plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [upperBlock, upperBlock], color='dimgrey', linestyle='--', label=upperLabel)
     else:
-      upperBlock = np.percentile(noSharedData, 99)
-      lowerBlock = np.percentile(sharedData, 1)
+      upperBlock = np.percentile(noSharedData, percent)
+      lowerBlock = np.percentile(sharedData, 100-percent)
       # Plot the lower bound line
-      plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [lowerBlock, lowerBlock], color='dimgrey', linestyle='--', label='1st Percentile')
+      plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [lowerBlock, lowerBlock], color='dimgrey', linestyle='--', label=lowerLabel)
 
       # Plot the upper bound line
-      plt.plot([0, intervalLineX+offset//5], [upperBlock, upperBlock], color='black', linestyle='--', label='99th perentile')
+      plt.plot([0, intervalLineX+offset//5], [upperBlock, upperBlock], color='black', linestyle='--', label=upperLabel)
       
     # Calculate the difference between the upper and lower blocks in the typical worst case
     worstCaseDiff = upperBlock - lowerBlock
 
     # Line for interval between lower and upper blocks bounds (worst case)
-    plt.plot([intervalLineX, intervalLineX], [lowerBlock, upperBlock], color='firebrick', linestyle='--', label=f'{worstCaseDiff:.3f} ms')
+    plt.plot([intervalLineX, intervalLineX], [lowerBlock, upperBlock], color='firebrick', linestyle='--', label=f'{worstCaseDiff:.3f} us')
 
     # Arrow for upper block
     plt.annotate('', xy=(intervalLineX, upperBlock), xytext=(intervalLineX-0.001, upperBlock), 
@@ -392,15 +400,20 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
                  arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
     
     # Put the worst case difference text
-    plt.text(intervalLineX+offset//4, lowerBlock-lowerStd/2, f'{worstCaseDiff:.3f} ms', fontsize=12, color='firebrick')
+    plt.text(intervalLineX+offset//4, lowerBlock-lowerStd/2, f'{worstCaseDiff:.3f} us', fontsize=12, color='firebrick')
 
   elif blockLines:
     # Plot the lines for the top and bottom of each data block
-    # Calculate the lower and upper bounds as the 1st and 99th percentiles
-    sharedLower= np.percentile(sharedData, 1)
-    noSharedLower = np.percentile(noSharedData, 1)
-    sharedUpper = np.percentile(sharedData, 99)
-    noSharedUpper = np.percentile(noSharedData, 99)
+    # Calculate the lower and upper bounds based on the provided percentile
+    if medianImpute:
+      sharedData[sharedData > upperBound] = sharedMedian
+      sharedData[sharedData < lowerBound] = sharedMedian
+      noSharedData[noSharedData > upperBound] = noSharedMedian
+      noSharedData[noSharedData < lowerBound] = noSharedMedian
+    sharedLower= np.percentile(sharedData, 100-percent)
+    noSharedLower = np.percentile(noSharedData, 100-percent)
+    sharedUpper = np.percentile(sharedData, percent)
+    noSharedUpper = np.percentile(noSharedData, percent)
 
     # Calculate the differences for each shared block
     sharedDiff = sharedUpper - sharedLower
@@ -440,22 +453,59 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
     plt.annotate('', xy=(intervalLineX-20000, noSharedLower), xytext=(intervalLineX-20000+0.001, noSharedLower),
                  arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
     
+    # Calculate the offset for text based on the bounds of the plot
+    textOffset = (upperBound - lowerBound) * 0.1
+
     if sharedHigher:
       # Put the shared difference text above the shared data and the no shared below
-      plt.text(intervalLineX, sharedUpper+sharedStd//4, f'{sharedDiff:.3f} ms', fontsize=12, color='firebrick')
-      plt.text(intervalLineX, noSharedLower-noSharedStd//4, f'{noSharedDiff:.3f} ms', fontsize=12, color='firebrick')
+      plt.text(intervalLineX+20000, sharedUpper+textOffset, f'{sharedDiff:.3f} us', fontsize=12, color='firebrick')
+      plt.text(intervalLineX-20000, noSharedLower-textOffset, f'{noSharedDiff:.3f} us', fontsize=12, color='firebrick')
     else:
       # Put the shared difference text below the shared data
       # Put the text for the shared difference and no shared above
-      plt.text(intervalLineX, sharedLower-sharedStd//4, f'{sharedDiff:.3f} ms', fontsize=12, color='firebrick')
-      plt.text(intervalLineX, noSharedUpper+noSharedStd//4, f'{noSharedDiff:.3f} ms', fontsize=12, color='firebrick')
+      plt.text(intervalLineX+20000, sharedLower-textOffset, f'{sharedDiff:.3f} us', fontsize=12, color='firebrick')
+      plt.text(intervalLineX-20000, noSharedUpper+textOffset, f'{noSharedDiff:.3f} us', fontsize=12, color='firebrick')
     
-
-     
-
-    
-
-
   # Show the plot
   plt.legend(loc='upper right')
   plt.show()
+
+
+def box_plotter(leftData, rightData):
+  """Plots box plots of the data side-by-side"""
+  import matplotlib.pyplot as plt
+
+   # Create one big plot
+  plt.figure(figsize=(15, 7))
+
+  # Plot both box plots
+  plt.boxplot([leftData, rightData])
+  plt.show()
+
+
+# Function to format the percentile label
+def percentile_labels(percentile):
+  # import numpy as np
+  # upperLast = int(str(percentile)[-1])
+  # lowerLast = int(str(100-percentile)[-1])
+
+  # # Get upper suffix
+  # if upperLast == 1:
+  #   upperSuffix = "st"
+  # elif upperLast == 2:
+  #   upperSuffix = "nd"
+  # elif upperLast == 3:
+  #   upperSuffix = "rd"
+  # else:
+  #   upperSuffix = "th"
+
+  # # Get lower suffix
+  # if lowerLast == 1:
+  #   lowerSuffix = "st"
+  # elif lowerLast == 2:
+  #   lowerSuffix = "nd"
+  # elif lowerLast == 3:
+  #   lowerSuffix = "rd"
+  # else:
+  #   lowerSuffix = "th"
+  return f"{100-percentile:.3f}%", f"{percentile}%"
