@@ -253,7 +253,7 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
   return median_diff, percent_diff
 
 
-def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, 
+def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
                   medianLines=False, worstCaseLines=False, blockLines=False, medianImpute=False, percent=99, offset=100000, y_axis="Interval (us)", perCap=None):
   """Plots the data side-by-side on the same plot"""
