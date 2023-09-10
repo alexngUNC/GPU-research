@@ -102,12 +102,13 @@ def plot_ivls(ivls, markers=[], lim=None, save=None):
     ax.set_xlabel("Time [milliseconds (ms)]")
     ax.set_ylabel("Timeslice Number")
     ax.ticklabel_format(style='plain')
-    ax.plot(flat_ivls, flat_y_idxs, c=dark_blue, solid_capstyle='butt')
+    ax.plot(flat_ivls, flat_y_idxs, c=dark_blue, solid_capstyle='butt', label='Logger Execution')
     line_length = 2
     print('plotting vlines...')
-    ax.vlines(ivls, ymin=flat_y_idxs-line_length/2, ymax=flat_y_idxs+line_length/2, color='black', linestyles='dotted')
+    ax.vlines(ivls, ymin=flat_y_idxs-line_length/2, ymax=flat_y_idxs+line_length/2, color='black', linestyles='dotted', label='Logger Start/Stop')
     print('plotting hlines...')
-    ax.hlines(np.arange(ivls.shape[0]), xmin=end_points, xmax=end_points+1.31, linestyles='dashed', color='green')
+    ax.hlines(np.arange(ivls.shape[0]), xmin=end_points, xmax=end_points+1.31, linestyles='dashed', color='green', label='Benchmark Execution/Preemption')
+    ax.legend(loc='upper left')
     #ax.plot(markers, numpy.ones(markers.size), "r+")
     for marker in markers:
         plt.axvline(marker, linestyle=':', c=dark_green)
