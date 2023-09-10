@@ -1,6 +1,8 @@
 Preemptions/GTX1080/Data
 Preemptions/Xavier/Data
+Preemptions/Xavier/preempts.csv
 Preemptions/Xavier/capacityData
+Preemptions/Xavier/FourCustomCapacity
 Preemptions/Xavier/NoSharedData
 Preemptions/Xavier/MaxCarveout
 Preemptions/Xavier/SetCapacityData

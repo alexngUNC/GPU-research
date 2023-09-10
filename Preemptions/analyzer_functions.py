@@ -17,6 +17,8 @@ def data_loader(noSharedPath=None, sharedPath=None, singlePath=None, preemptIvls
       single_ivls = []
       for i in range(0, NUM_SAMPLES-1):
         single_ivls.append(single['start'][i+1] - single['end'][i])
+      if onlyPreemptIvls:
+        return single_ivls
       return single, single_ivls
     return single
 
@@ -253,7 +255,7 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
   return median_diff, percent_diff
 
 
-def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
+def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=10, blockOffset=10,
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
                   medianLines=False, worstCaseLines=False, blockLines=False, medianImpute=False, percent=99, offset=100000, y_axis="Interval (us)", perCap=None):
   """Plots the data side-by-side on the same plot"""
@@ -341,6 +343,7 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
 
   # Plot the interval lines if desired
   if medianLines:
+
     # Median lines
     plt.plot([0, intervalLineX+offset//5], [noSharedMedian, noSharedMedian], color='black', linestyle='--', label='Median')
     plt.plot([intervalLineX-offset//5, 2*NUM_SAMPLES+offset], [sharedMedian, sharedMedian], color='black', linestyle='--')
@@ -359,6 +362,23 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
                  
     # Put the median difference text
     plt.text(intervalLineX+offset//4, lowerMedian-lowerStd/2, f'{abs(medianDifference):.3f} us', fontsize=12, color='firebrick')
+
+    # Calculate the lower and upper bounds based on the provided percentile
+    if medianImpute:
+      sharedData[sharedData > upperBound] = sharedMedian
+      sharedData[sharedData < lowerBound] = sharedMedian
+      noSharedData[noSharedData > upperBound] = noSharedMedian
+      noSharedData[noSharedData < lowerBound] = noSharedMedian
+    sharedLower= np.percentile(sharedData, 100-percent)
+    noSharedLower = np.percentile(noSharedData, 100-percent)
+    sharedUpper = np.percentile(sharedData, percent)
+    noSharedUpper = np.percentile(noSharedData, percent)
+
+    # Put the no shared median above its block
+    plt.text(NUM_SAMPLES/2, noSharedUpper+medianOffset, f'{noSharedMedian:.3f} us', fontsize=12, color='black')
+
+    # Put the shared median above its block
+    plt.text(NUM_SAMPLES+offset+NUM_SAMPLES/2, sharedUpper+medianOffset, f'{sharedMedian:.3f} us', fontsize=12, color='black')
 
   elif worstCaseLines:
     # Plot the lines for the top and bottom of one of the upper and lower blocks, respectively
@@ -400,7 +420,7 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
                  arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick'))
     
     # Put the worst case difference text
-    plt.text(intervalLineX+offset//4, lowerBlock-lowerStd/2, f'{worstCaseDiff:.3f} us', fontsize=12, color='firebrick')
+    plt.text(intervalLineX+offset//4, lowerBlock-blockOffset, f'{worstCaseDiff:.3f} us', fontsize=12, color='firebrick')
 
   elif blockLines:
     # Plot the lines for the top and bottom of each data block
@@ -458,13 +478,13 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int,
 
     if sharedHigher:
       # Put the shared difference text above the shared data and the no shared below
-      plt.text(intervalLineX+20000, sharedUpper+textOffset, f'{sharedDiff:.3f} us', fontsize=12, color='firebrick')
-      plt.text(intervalLineX-20000, noSharedLower-textOffset, f'{noSharedDiff:.3f} us', fontsize=12, color='firebrick')
+      plt.text(intervalLineX+blockOffset, sharedUpper+textOffset, f'{sharedDiff:.3f} us', fontsize=12, color='firebrick')
+      plt.text(intervalLineX-blockOffset, noSharedLower-textOffset, f'{noSharedDiff:.3f} us', fontsize=12, color='firebrick')
     else:
       # Put the shared difference text below the shared data
       # Put the text for the shared difference and no shared above
-      plt.text(intervalLineX+20000, sharedLower-textOffset, f'{sharedDiff:.3f} us', fontsize=12, color='firebrick')
-      plt.text(intervalLineX-20000, noSharedUpper+textOffset, f'{noSharedDiff:.3f} us', fontsize=12, color='firebrick')
+      plt.text(intervalLineX+blockOffset, sharedLower-textOffset, f'{sharedDiff:.3f} us', fontsize=12, color='firebrick')
+      plt.text(intervalLineX-blockOffset, noSharedUpper+textOffset, f'{noSharedDiff:.3f} us', fontsize=12, color='firebrick')
     
   # Show the plot
   plt.legend(loc='upper right')
