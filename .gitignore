@@ -18,3 +18,5 @@ Preemptions/Xavier/ConstantData
 Preemptions/Xavier/CleanCache
 Preemptions/Xavier/StaticData
 Preemptions/Xavier/CompilerData
+Preemptions/Xavier/GlobalMemory
+Preemptions/Xavier/GlobalMemoryOld
