@@ -545,3 +545,30 @@ def percentile_labels(percentile):
   # else:
   #   lowerSuffix = "th"
   return f"{100-percentile:.3f}%", f"{percentile}%"
+
+
+def read_ivls(paths, single=False):
+  import numpy as np
+  if single:
+    data, ivls = data_loader(singlePath=paths, single=True)
+    return  np.array(ivls) / 1000
+  ivls_array = []
+  for path in paths:
+    data, ivls = data_loader(singlePath=path, single=True)
+    # Convert to microseconds
+    ivls = np.array(ivls) / 1000
+    ivls_array.append(ivls)
+  return ivls_array
+
+
+
+def get_overhead(ivls, timeslice_length):
+  return (ivls - timeslice_length) / 2
+
+
+def cut_ivls(ivls, window):
+  """
+  Takes an experimment (list of intervals) and only takes the percentage of intervals
+  specified by window (e.g. [25, 75] for inter-quartile range)
+  """
+  pass
