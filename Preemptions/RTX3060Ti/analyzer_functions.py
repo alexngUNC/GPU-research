@@ -312,6 +312,8 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=1
   if preemptIvls:
     if perCap:
       plt.title(f'Preemption and Execution - {perCap}% Capacity')
+    elif plotOverhead:
+      plt.title('Preemption Overhead')
     else:  
       plt.title('Preemption and Execution')
   else:

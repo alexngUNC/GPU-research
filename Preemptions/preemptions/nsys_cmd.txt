@@ -1,0 +1,1 @@
+sudo /usr/local/cuda-12.5/bin/nsys profile --gpuctxsw=true --cuda-memory-usage=true --cuda-um-gpu-page-faults=true
