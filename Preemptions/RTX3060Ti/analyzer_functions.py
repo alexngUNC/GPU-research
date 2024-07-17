@@ -258,7 +258,7 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
 def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=10, blockOffset=10,
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
                   medianLines=False, worstCaseLines=False, blockLines=False, medianImpute=False, percent=99, offset=100000, y_axis="Interval (us)", perCap=None,
-                  lowerTextOffset=0, upperTextOffset=0):
+                  lowerTextOffset=0, upperTextOffset=0, plotOverhead=False):
   """Plots the data side-by-side on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -268,7 +268,10 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=1
   plt.figure(figsize=(15, 7))
 
   # x-values for no shared data
-  noSharedX = np.arange(1, NUM_SAMPLES)
+  if plotOverhead:
+    noSharedX = np.arange(1, NUM_SAMPLES + 1)
+  else:
+    noSharedX = np.arange(1, NUM_SAMPLES)
 
   # Move the shared data to the right
   sharedX = noSharedX + NUM_SAMPLES + offset
@@ -563,12 +566,19 @@ def read_ivls(paths, single=False):
 
 
 def get_overhead(ivls, timeslice_length):
-  return (ivls - timeslice_length) / 2
-
+  result = []
+  for ivl in ivls:
+    result.append((ivl - timeslice_length) / 2)
+    result.append((ivl - timeslice_length) / 2)
+  return result
+ 
 
 def cut_ivls(ivls, window):
   """
   Takes an experimment (list of intervals) and only takes the percentage of intervals
   specified by window (e.g. [25, 75] for inter-quartile range)
   """
-  pass
+  n = len(ivls)
+  lower = int(window[0] / 100 * n)
+  upper = int(window[1] / 100 * n)
+  return ivls[lower:upper]
