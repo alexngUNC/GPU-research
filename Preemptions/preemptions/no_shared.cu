@@ -8,7 +8,10 @@
 __global__ void vecAdd(float *a, float *b, int n, int *flag) {
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
 	b[i] += a[i];
-	*flag = 0;
+	__threadfence_system();
+	if (blockIdx.x == 0 && threadIdx.x == 0) {
+		*flag = 0;
+	}
 	while (1) {}
 }
 

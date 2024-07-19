@@ -5,12 +5,15 @@
 #define SHARED_MEM_TB 49152
 
 
-__global__ void vecAdd(float *a, float *b, int n, int *flag) {
+__global__ void vecAdd(float *a, float *b, int n, int *flag, int *blockCounter) {
+	// global thread index
 	int i = blockIdx.x * blockDim.x + threadIdx.x;
+	if (i >= n) return;
+
 	// dynamic shared memory for result
 	extern __shared__ float res[];
 
-	// index for loop
+	// index for shared memory portion
 	int idx = (int) 12.0 * PERCENTAGE_SHARED * ((double) threadIdx.x);
 
 	// loop to fill up shared memory
@@ -19,9 +22,22 @@ __global__ void vecAdd(float *a, float *b, int n, int *flag) {
 	for (int j=0; j<limit; j++) {
 		res[idx + j] = b[i];
 	}
+
+	// ensure all blocks have loaded their portion of shared memory
 	__syncthreads();
+	if (threadIdx.x == 0) {
+		atomicAdd(blockCounter, 1);
+	}
+	__syncthreads();
+
 	// tell CPU that shared memory is fully saturated
-	*flag = 0;
+	if (blockIdx.x == 0 && threadIdx.x == 0) {
+		while (*blockCounter < gridDim.x) {
+			// wait for all blocks to load shared memory
+		}
+		*flag = 0;
+	}
+
 	// spin with desired shared memory usage
 	while (1) {}
 }
@@ -54,10 +70,15 @@ main()
 	SAFE(cudaHostAlloc(&flag, sizeof(int), cudaHostAllocMapped));
 	*flag = 1;
 
+	// block counter for syncrhonizing across blocks
+	int *blockCounter;
+	SAFE(cudaMalloc(&blockCounter, sizeof(int)));
+	SAFE(cudaMemset(blockCounter, 0, sizeof(int)));
+
 	// launch kernel
 	int sharedMem = SHARED_MEM_TB * PERCENTAGE_SHARED;
-	vecAdd<<<CONCURRENT_TB, 1024, sharedMem>>>(d_a, d_b, n, flag);
-	while (*flag) {}
+	vecAdd<<<CONCURRENT_TB, 1024, sharedMem>>>(d_a, d_b, n, flag, blockCounter);
+	while (*flag) { /* wait until all of shared memory is loaded */ }
 	printf("Shared memory is fully saturated!\n");
 	SAFE(cudaDeviceSynchronize());
 

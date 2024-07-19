@@ -257,8 +257,8 @@ def median_difference(noSharedIvls, sharedIvls, show=True):
 
 def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=10, blockOffset=10,
                   preemptIvls: bool=True, lowerBound=None, upperBound=None, firstLabel=None, secondLabel=None,
-                  medianLines=False, worstCaseLines=False, blockLines=False, medianImpute=False, percent=99, offset=100000, y_axis="Interval (us)", perCap=None,
-                  lowerTextOffset=0, upperTextOffset=0, plotOverhead=False):
+                  medianLines=False, worstCaseLines=False, blockLines=False, medianImpute=False, percent=99, offset=0, y_axis="Interval (us)", perCap=None,
+                  lowerTextOffset=0, upperTextOffset=0, plotOverhead=False, oneSideTicks=False, thousand=False):
   """Plots the data side-by-side on the same plot"""
   assert len(sharedData) == len(noSharedData), "Shared and no shared data must be the same length"
   import matplotlib.pyplot as plt
@@ -290,7 +290,7 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=1
   plt.locator_params(axis='y', nbins=10)
 
   # Add x-axis ticks
-  xTickLabels = ['']
+  xTickLabels = []
   tenth = NUM_SAMPLES // 10
   if NUM_SAMPLES == 1000000:
     xTickNums = np.arange(100, 1000, 100)
@@ -301,13 +301,27 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=1
     xTickLabels.append('1 M')
     plt.xticks(np.arange(1, 2*NUM_SAMPLES+offset+tenth, tenth), xTickLabels)
   else:
-    xTickNums = np.arange(NUM_SAMPLES // 10, NUM_SAMPLES, NUM_SAMPLES // 10)
-    xTickLabels += [f'{n}' for n in xTickNums]
-    xTickLabels.append(str(NUM_SAMPLES))
-    xTickLabels += ["" for i in range(int(offset / tenth))]
-    xTickLabels += [f'{n}' for n in xTickNums]
-    xTickLabels.append(str(NUM_SAMPLES))
-    plt.xticks(np.arange(1, 2*NUM_SAMPLES+offset+tenth, tenth), xTickLabels)
+    last_val = 1 if NUM_SAMPLES % 10 == 0 else 0
+    xTickNums = np.arange(0, NUM_SAMPLES+last_val, tenth)
+    if thousand:
+      temp = [f'{n//1000}k' for n in xTickNums] 
+    else:
+      temp = [f'{n}' for n in xTickNums]
+    xTickLabels += temp
+    xTickLabels += ["" for i in range(int(offset/tenth))]
+    xTickLabels += temp
+    final = np.arange(0)
+    final = np.append(final, xTickNums)
+
+    if oneSideTicks:
+      for i in range(int(offset/tenth)):
+        final = np.append(final, 0)
+      final = np.append(final, xTickNums)
+    else:
+      for i in range(int(offset/tenth)):
+        final = np.append(final, NUM_SAMPLES+i+tenth)
+      final = np.append(final, final[-1]+offset+xTickNums)
+    plt.xticks(final, xTickLabels)
 
   if preemptIvls:
     if perCap:
