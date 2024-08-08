@@ -1,15 +1,9 @@
 .PHONY: all clean
 NVCC ?= nvcc
 
-all: constant_cycles_kernel pf_spin pf_thrasher crash preemption_logger shared no_shared constant no_constant
+all: constant_cycles_kernel pf_spin pf_thrasher crash preemption_logger constant no_constant 
 
-memory: shared constant_cycles_kernel preemption_logger
-
-shared: shared.cu testbench.h
-	$(NVCC) shared.cu -o bin/shared
-
-no_shared: no_shared.cu testbench.h
-	$(NVCC) no_shared.cu -o bin/no_shared
+memory: constant_cycles_kernel preemption_logger
 
 constant: constant.cu testbench.h
 	$(NVCC) constant.cu -o bin/constant

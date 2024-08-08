@@ -526,16 +526,59 @@ def plot_side_by_side(noSharedData, sharedData, NUM_SAMPLES: int, medianOffset=1
   plt.show()
 
 
-def box_plotter(leftData, rightData):
-  """Plots box plots of the data side-by-side"""
+def box_plotter(leftData, leftLabel, rightData, rightLabel,
+                title, ylabel, xlabel, ymin=None, ymax=None):
+  """Plots box plots of the data side-by-side with lines for medians"""
   import matplotlib.pyplot as plt
 
-   # Create one big plot
+  # Create one big plot
   plt.figure(figsize=(15, 7))
 
-  # Plot both box plots
-  plt.boxplot([leftData, rightData])
+  # Plot both box plots and store the box plot result
+  boxprops = plt.boxplot([leftData, rightData], labels=[leftLabel, rightLabel], patch_artist=True)
+
+  # Retrieve the median values
+  medians = [item.get_ydata()[1] for item in boxprops['medians']]
+  positions = [item.get_xdata()[0] for item in boxprops['medians']]
+
+  # Add lines for medians
+  colors = ['b', 'gray']
+  for i, median in enumerate(medians):
+    plt.axhline(y=median, color=colors[i], linestyle='--', label=f'{[leftLabel, rightLabel][i]} Median')
+
+  # Add vertical line between the medians
+  upper_median = max(medians)
+  lower_median = min(medians)
+  x_position = (positions[0] + positions[1]) / 2
+  median_difference = upper_median - lower_median
+  plt.plot([x_position, x_position], [lower_median, upper_median], 
+            color='firebrick', linestyle='--', linewidth=1.5, label=f'{median_difference:.3f} us')
+  
+  # Median difference text
+  plt.text(x_position+0.001, lower_median-1, f'{median_difference:.3f} us', fontsize=12, color='firebrick')
+
+  # Draw the arrows
+  plt.annotate('', xy=(x_position, max(medians)), xytext=(x_position-0.001, max(medians)), 
+                arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=0', color='firebrick'))
+  plt.annotate('', xy=(x_position, min(medians)), xytext=(x_position+0.001, min(medians)),
+                arrowprops=dict(arrowstyle='->', linewidth=1.5, connectionstyle='bar,angle=180', color='firebrick')) 
+
+  # Limit y-axis
+  if ymin and ymax:
+    plt.ylim(ymin, ymax)
+
+  # Title and axes
+  plt.title(title)
+  plt.xlabel(xlabel)
+  plt.ylabel(ylabel)
+
+  # Add a legend for median lines
+  plt.legend()
+
   plt.show()
+
+
+
 
 
 # Function to format the percentile label
